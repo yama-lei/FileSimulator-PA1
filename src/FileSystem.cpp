@@ -3,6 +3,8 @@
 FileSystem::FileSystem(const string& username, const uint64_t& inode)
     : root(new Directory("", username, inode, nullptr)), cur(root), username(username) {
     // no change
+
+
     users.insert(username);
 }
 

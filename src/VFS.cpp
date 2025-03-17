@@ -1,5 +1,5 @@
 #include "VFS.h"
-
+using namespace std;
 VFS::VFS() {
     filesystem = new FileSystem("root", InodeFactory::generateInode());
 }
