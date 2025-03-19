@@ -95,10 +95,60 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
             cout << "ERROR: remove the dir by command:  rmdir [-r] <dirname> \n";
         }
     }
-
+    else if (first == "cd") {
+        if (len == 2) {
+            string path = cmd[1];
+            istringstream iss(path);
+            string token = "";
+            getline(iss, token, '\\');
+            if (token == "C:") {
+                filesystem->changeDir(filesystem->resolvePath(path)->getInode());
+            }
+            else {
+                FileObj* fb = filesystem->resolvePath(path, "Directory", true);
+                if (fb == nullptr) {
+                    return false;
+                }
+                else {
+                    filesystem->changeDir(fb->getInode());
+                    return true;
+                }
+            }
+        }
+        else {
+            cout << "ERROR: use command cd <path> to change current dir!\n";
+        }
+    }
+    else if (first == "ls") {
+        if (len ==1) {
+            filesystem->getCurrentDir()->display();
+        }
+        else {
+            cout << "ERROR: use command ls to list all the items in the current dir\n";
+        }
+    }
+    else if (first == "pwd") {
+        cout << filesystem->getCurrentPath() << endl;
+    }
+    else if (first == "whoami") {
+        cout << "The current user:  " << filesystem->getUserName() << endl;
+    }
+    else if (first=="clear") {
+#ifdef _WIN32
+        system("cls");
+#else
+        system("clear");
+#endif
+    } 
+    else if (first == "help") {
+        showHelp();
+    }
+    else if (first == "exit"||first=="quit") {
         
-        
- 
+    }
+    else {
+        cout << "ERROR: Unkonwn command!\n";
+    }
 }
 
 void ClientInterface::processCommand(const string& cmdLine) {

@@ -2,9 +2,10 @@
 using namespace std;
 
 FileSystem::FileSystem(const string& username, const uint64_t& inode)
-    : root(new Directory("root", username, inode, nullptr)), cur(root), username(username) {
+    : root(new Directory("C:", username, inode, nullptr)), cur(root), username(username) {
     // no change
     users.insert(username);
+    config_table.insert({ "C: Directory",root->getInode()});
 }
 
 // Navigation
@@ -18,7 +19,7 @@ bool FileSystem::changeDir(const uint64_t& inode) {
     }
     else {
         cur = dynamic_cast<Directory*>(dir);
-        cout << "THE CURRENT PATH HAS CHANGED TO:  " << cur->getPath()<<endl;
+        cout << "The current path is changed! " << cur->getPath()<<endl;
         return true;
     }
     return false;
@@ -57,7 +58,7 @@ bool FileSystem::deleteFile(const string& name){
                 config_table.erase(cur->getPath() +'\\'+name + " File");
             }
             else {
-                cout << "ERROR: the user" << username << " do not have the authority to delete this file!\n";
+                cout << "ERROR: the user " << username << " do not have the authority to delete this file!\n";
             }
         }
         else {
@@ -101,7 +102,7 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
     if (recursive) {
         cur->removeDir(search(name, "Directory"));
         config_table.erase(cur->getPath()+'\\'+name + " Directory");
-       
+        cout << "The directory " << name << " is deleted successfully!\n";
         return true;
     }
     else {
@@ -199,7 +200,7 @@ bool FileSystem::registerUser(const string& username) {
 }
 
 // helper function,get the dir or file with this path;
-FileObj* FileSystem::resolvePath(const string& path,string type) {
+FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
     // TODO: resolve path, you can use strtok() in c library or istringstream with getline() in c++
     // return target of FileObj* if resolve successfully, otherwise nullptr
     /*    istringstream ins(path);
@@ -234,17 +235,26 @@ FileObj* FileSystem::resolvePath(const string& path,string type) {
         
     }
     else {
-        if (config_table.count(path + " " + type) == 0) {
-            cout << "ERROR: the path do not exists\n";
-            return nullptr;
+        string newPath = "";
+        if (relative) {
+            newPath= cur->getPath() +"\\" + path;
         }
         else {
-            uint64_t inode = config_table[path + " " + type];
-            return inodeToPointer(inode);
+             newPath = path;
         }
+
+            if (config_table.count(newPath + " " + type) == 0) {
+                cout << "ERROR: the path do not exists\n";
+                return nullptr;
+            }
+            else {
+                uint64_t inode = config_table[newPath + " " + type];
+                if (inode == 1) {
+                    return root;
+                }
+                return inodeToPointer(inode);
+            }
     }
-    
-    
     return nullptr;
 }
 

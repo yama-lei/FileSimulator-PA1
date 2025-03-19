@@ -8,9 +8,8 @@ void testClientInterface();
 void testFileSystem();
 
 int main() {
-    //VFS vfs;
-    //vfs.run();
-    testClientInterface();
+    VFS vfs;
+    vfs.run();
     return 0;
 }
 
@@ -55,10 +54,14 @@ void testClientInterface() {
     ci.listCurrentDir();
     ci.processCommand("create test.md");
     ci.listCurrentDir();
-    ci.processCommand("write test.md");
-    ci.processCommand("read test.md");
     ci.processCommand("mkdir dir");
     ci.listCurrentDir();
-    ci.processCommand("rmdir dir");
-    ci.listCurrentDir();
+    ci.processCommand("ls");
+    ci.processCommand("ls");
+    ci.processCommand("create file.md");
+    ci.processCommand("ls");
+    ci.processCommand("cd C:");
+    ci.processCommand("pwd");
+    ci.processCommand("cd C:\\dir");
+    ci.processCommand("pwd");
 }

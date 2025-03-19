@@ -47,10 +47,13 @@ public:
     Directory* getRootDir() const { return root; }
 
     // helper function for change dir, no useful, use search directly
-    FileObj* resolvePath(const string& path,string type="Directory");
+    FileObj* resolvePath(const string& path,string type="Directory",bool relative=false);
     void display();
 
     FileObj* inodeToPointer(uint64_t inode,Directory* rt=nullptr) {
+        if (inode == 1) {
+            return root;
+        }
         if (rt == nullptr) {
             rt = root;
         }
