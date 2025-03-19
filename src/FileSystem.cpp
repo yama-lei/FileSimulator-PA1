@@ -99,16 +99,20 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
     }
     Directory* dir = dynamic_cast<Directory*>(cur->getChild(config_table[cur->getPath() +'\\'+name + " Directory"]));
     if (recursive) {
-        delete dir;
+        cur->removeDir(search(name, "Directory"));
         config_table.erase(cur->getPath()+'\\'+name + " Directory");
+       
+        return true;
     }
     else {
         if (dir->isEmpty()) {
-            delete dir;
+            cur->removeDir(search(name, "Directory"));
             config_table.erase(cur->getPath() + '\\' + name + " Directory");
+            return true;
         }
         else {
             cout << "ERROR: the directory is not empty, try to add parameter -r\n";
+            return false;
         }
     }
     return false;

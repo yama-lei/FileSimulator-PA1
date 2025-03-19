@@ -209,16 +209,13 @@ string ClientInterface::getCurrentPath() const {
     // TODO: Get current working directory path, returns current path as string
     // note 1: use filesystem to get current path
 
-    fprintf(stderr, "Error: ClientInterface::getCurrentPath() is not implemented yet!\n");
-    assert(0);
-    return "";
+    return filesystem->getCurrentPath();
 }
 
 string ClientInterface::search(const string& name, const string& type) {
     // TODO: Search file or directory by name, returns formatted result string
     // note 1: use filesystem to search by name
-
-    fprintf(stderr, "Error: ClientInterface::search() is not implemented yet!\n");
-    assert(0);
-    return "";
+    uint64_t inode=filesystem->search(name, type);
+    FileObj* obj=filesystem->getCurrentDir()->getChild(inode);
+    return obj->getName() + " " + obj->getType();
 }

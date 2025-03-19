@@ -63,8 +63,8 @@ bool Directory::removeDir(uint64_t inode){
         if (item->getType() != "Directory") {
             throw runtime_error("ERROR: use remove to remove files!");
         }
-        children.erase(inode);
         delete item;
+        children.erase(inode);
     }catch(const exception& e){
         cout << e.what() << endl;
         return false;

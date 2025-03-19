@@ -15,7 +15,7 @@ public:
             delete pair.second;
         }
         children.clear();
-        /*    if (getParent() != nullptr) {
+        /*if (getParent() != nullptr) {
             //Waring !!! I thik we should tell his parents if the son node is deleted!
             auto parent = dynamic_cast<Directory*>(getParent());
             parent->removeDir(getInode());
