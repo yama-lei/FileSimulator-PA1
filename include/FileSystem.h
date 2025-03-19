@@ -12,7 +12,6 @@ private:
     string username;
     std::set<string> users;
     std::unordered_map<string, uint64_t> config_table;
-
 public:
     FileSystem(const string& username, const uint64_t& inode);
     ~FileSystem() = default;
@@ -22,7 +21,7 @@ public:
 
     // File operation "local"
     File* createFile(const string& name);
-    bool deleteFile(const string& name, const string& user);
+    bool deleteFile(const string& name);
 
     // Dir operation "local"
     Directory* createDir(const string& name);
@@ -48,5 +47,26 @@ public:
     Directory* getRootDir() const { return root; }
 
     // helper function for change dir, no useful, use search directly
-    FileObj* resolvePath(const string& path);
+    FileObj* resolvePath(const string& path,string type="Directory");
+    void display();
+
+    FileObj* inodeToPointer(uint64_t inode,Directory* rt=nullptr) {
+        if (rt == nullptr) {
+            rt = root;
+        }
+        vector<FileObj*> sons=(rt->getAll());
+        for (auto obj : sons) {
+            if (obj->getInode() == inode) {
+                return obj;
+            }
+            if(obj->getType()=="Directory") {
+                FileObj* ptr = inodeToPointer(inode, dynamic_cast<Directory*>(obj));
+                if (ptr !=nullptr ) {
+                    return ptr;
+                }
+            }
+        }
+        return nullptr;
+    }
+
 };

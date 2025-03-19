@@ -1,5 +1,5 @@
 #include "ClientInterface.h"
-
+using namespace std;
 ClientInterface::ClientInterface(const string& username, FileSystem* filesystem)
     : filesystem(filesystem), username(username) {
     // no change
@@ -9,10 +9,13 @@ std::vector<string> ClientInterface::parseCommand(const string& cmdLine) {
     // TODO: Parse command line into vector of arguments, returns vector of parsed arguments
     // note 1: split by whitespace, you can use strtok() in c or istringstream in c++ to get tokens
     // note 2: handle quote string in two bounds for per token
-
-    fprintf(stderr, "Error: ClientInterface::parseCommand() is not implemented yet!\n");
-    assert(0);
-    return std::vector<string>();
+    istringstream iss(cmdLine);
+    string token = "";
+    vector<string> commands;
+    while (getline(iss, token, ' ')) {
+        commands.push_back(token);
+    }
+    return commands;
 }
 
 bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
@@ -20,20 +23,92 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
     // note 1: check first argument for command type
     // note 2: validate number of arguments
     // note 3: call corresponding operation method
+    cout << "NOW execue the commands:  ";
+    for (string c : cmd) {
+        cout << c << " ";
+    }
+    cout << "\n";
+    string first = cmd[0];
+    uint64_t len = cmd.size();
+    if (first == "create") {
+        if (len != 2) {
+            cout << "ERROR: create a file by command: create <filename> /n";
+            return false;
+        }
+        else {
+            createFile(cmd[1]);
+            return true;
+        }
+    }
+    else if(first=="delete"){
+        if (len != 2) {
+            cout << "ERROR: delete a file by command: delete <filename> /n";
+            return false;
+        }
+        else {
+            deleteFile(cmd[1]);
+            return true;
+        }
+    }
+    else if(first=="read") {
+        if (len != 2) {
+                cout << "ERROR: read a file by command: read <filename> /n";
+                return false;
+            }
+            Directory* dir = filesystem->getCurrentDir();
+            uint64_t inode = filesystem->search(cmd[1], "File");
+            dynamic_cast<File*>(dir->getChild(inode))->read();
+            return true;
+    }
+    else if (first == "write") {
+        if (len != 2) {
+                cout << "ERROR: write a file by command: write <filename> /n";
+                return false;
+           }
+           Directory* dir = filesystem->getCurrentDir();
+           string data;
+           getline(cin, data);
+           uint64_t inode = filesystem->search(cmd[1], "File");
+           return dynamic_cast<File*>(dir->getChild(inode))->write(data);
+     }
+    else if(first=="mkdir") {
+        if (len != 2) {
+            cout << "ERROR: make a new dir by command: mkdir <dirname> /n";
+            return false;
+        }
+        return createDir(cmd[1]);
+    }
+    else if (first == "rmdir") {
+        if (len != 1) {
+            if (cmd[1] == "-r") {
+                if (len != 3) {
+                    cout << "ERROR: remove the dir by command:  rmdir [-r] <dirname> \n";
+                }
 
-    fprintf(stderr, "Error: ClientInterface::execueCommand() is not implemented yet!\n");
-    assert(0);
-    return false;
+                deleteDir(cmd[2], true);
+            }
+            else {
+                deleteDir(cmd[1], false);
+            }
+        }
+        else {
+            cout << "ERROR: remove the dir by command:  rmdir [-r] <dirname> \n";
+        }
+    }
+
+        
+        
+ 
 }
 
 void ClientInterface::processCommand(const string& cmdLine) {
     // TODO: Process user input command line, no return value
     // note 1: parse command line
     // note 2: execute command
-    // note 3: handle exceptions
+    // note 3: handle exceptions  
+    vector<string> cmds = parseCommand(cmdLine);
+    execueCommand(cmds);
 
-    fprintf(stderr, "Error: ClientInterface::processCommand() is not implemented yet!\n");
-    assert(0);
 }
 
 void ClientInterface::showHelp() const {
@@ -60,19 +135,21 @@ bool ClientInterface::createFile(const string& name) {
     // TODO: Create new file with given name, returns true if file created successfully
     // note 1: validate file name
     // note 2: use filesystem to create file
-
-    fprintf(stderr, "Error: ClientInterface::createFile() is not implemented yet!\n");
-    assert(0);
-    return false;
+    //remember to set the owner of the file!!!!!!! Because the FileSystem don't take this jobs!
+    //note by 3/19: the sentence above is wrong!
+    if (name.find('\\')==string::npos) {
+        filesystem->createFile(name);
+    }
+    else {
+        cout << "ERROR: the name of the file shouldn't contain '\\'\n";
+        return false;
+    }
 }
 
 bool ClientInterface::deleteFile(const string& name) {
     // TODO: Delete file with given name, returns true if file deleted successfully
     // note 1: use filesystem to delete file
-
-    fprintf(stderr, "Error: ClientInterface::deleteFile() is not implemented yet!\n");
-    assert(0);
-    return false;
+    return filesystem->deleteFile(name);
 }
 
 string ClientInterface::readFile(const string& name) {
@@ -99,19 +176,17 @@ bool ClientInterface::writeFile(const string& name, const string& data) {
 bool ClientInterface::createDir(const string& name) {
     // TODO: Create new directory with given name, returns true if directory created successfully
     // note 1: use filesystem to create directory
-
-    fprintf(stderr, "Error: ClientInterface::createDir() is not implemented yet!\n");
-    assert(0);
+    FileObj* ptr = filesystem->createDir(name);
+    if (ptr != nullptr) {
+        return true;
+    }
     return false;
 }
 
 bool ClientInterface::deleteDir(const string& name, bool recursive) {
     // TODO: Delete directory with given name, returns true if directory deleted successfully
     // note 1: use filesystem to delete directory with recursive flag
-
-    fprintf(stderr, "Error: ClientInterface::deleteDir() is not implemented yet!\n");
-    assert(0);
-    return false;
+    return   filesystem->deleteDir(name,filesystem->getUserName(), recursive);
 }
 
 bool ClientInterface::changeDir(const string& path) {
@@ -127,9 +202,7 @@ bool ClientInterface::changeDir(const string& path) {
 void ClientInterface::listCurrentDir() {
     // TODO: List all contents in current directory, no return value
     // note 1: print each child's name in current directory per line
-
-    fprintf(stderr, "Error: ClientInterface::listCurrentDir() is not implemented yet!\n");
-    assert(0);
+    filesystem->display();
 }
 
 string ClientInterface::getCurrentPath() const {

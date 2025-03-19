@@ -15,13 +15,13 @@ public:
             delete pair.second;
         }
         children.clear();
-        if (getParent() != nullptr) {
+        /*    if (getParent() != nullptr) {
             //Waring !!! I thik we should tell his parents if the son node is deleted!
             auto parent = dynamic_cast<Directory*>(getParent());
             parent->removeDir(getInode());
         }
+    }*/
     }
-    
     // add, remove
     bool add(FileObj* child);
     bool remove(uint64_t inode);
@@ -34,5 +34,6 @@ public:
 
     // helper function
     bool isEmpty() const;
-    void display() const override;
+    void display(size_t indext=0) const override;
 };
+

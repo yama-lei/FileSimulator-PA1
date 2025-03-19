@@ -18,5 +18,5 @@ public:
     virtual string getContent() const;
 
     // helper function
-    void display() const override;
+    void display(size_t indent=0) const override;
 };

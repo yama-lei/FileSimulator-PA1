@@ -1,10 +1,12 @@
 #include "Directory.h"
 using namespace std;
 Directory::Directory(const string& name, const string& owner, const uint64_t& inode, FileObj* parent)
-    :FileObj(name, "","Directory",owner, inode, nullptr) { 
+    :FileObj(name, "", "Directory", owner, inode, parent) { 
     // TODO: finish construction function like File class
     if (parent != nullptr) {
-		this->setPath(parent->getPath()+"\\"+name);
+        this->setPath(parent->getPath() + '\\' + name);
+    } else {
+        this->setPath(name);  
     }
 }
 
@@ -19,6 +21,7 @@ bool Directory::add(FileObj* child) {
     }
     child->setParent(this);
     this->children[child->getInode()] = child;
+    child->setPath(this->getPath() + '\\' + child->getName());
     return true;
 }
 
@@ -60,8 +63,8 @@ bool Directory::removeDir(uint64_t inode){
         if (item->getType() != "Directory") {
             throw runtime_error("ERROR: use remove to remove files!");
         }
-        delete item;
         children.erase(inode);
+        delete item;
     }catch(const exception& e){
         cout << e.what() << endl;
         return false;
@@ -107,10 +110,22 @@ bool Directory::isEmpty() const {
 }
 
 // helper function
-void Directory::display() const {
-    std::cout << "[Directory: " << getName() << "]" << std::endl;
+void Directory::display( size_t indent) const {
+
+    if (indent == 0) {
+        for (int i = 0; i < indent; i++)
+            cout << " ";
+        std::cout << "  Path:" <<getPath()<<" [Directory: " << getName() << "]"<< std::endl;
+    }
     for (const auto& pair : this->children) {
-        std::cout << "- " << pair.second->getType() << ": " 
+        for (int i = 0; i < indent; i++)
+            cout << " ";
+        std::cout << "- " <<"Path: "<<pair.second->getPath()<<" " << pair.second->getType() << ": "
                  << pair.second->getName() << " with owner: " << pair.second->getOwner() << std::endl;
+     //This part is modified by me.
+        if (pair.second->getType() == "Directory") {
+            pair.second->display(indent+4);
+        }
     }
 }
+

@@ -42,5 +42,5 @@ public:
     void setInode(const uint64_t& inode) { this->inode = inode; }
     void setParent(FileObj * parent) { this->parent = parent; }
 
-    virtual void display() const = 0;
+    virtual void display(size_t indent=0) const = 0;
 };
