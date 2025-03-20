@@ -1,3 +1,6 @@
+#define RESET   "\033[0m"    // 重置颜色
+#define RED     "\033[31m"   // 红色前景
+#define GREEN   "\033[32m"   // 绿色前景
 #include "VFS.h"
 using namespace std;
 VFS::VFS() {
@@ -24,6 +27,8 @@ void VFS::handleLogin(string& username) {
     if(!filesystem->hasUser(username)) {
         throw std::runtime_error("User does not exist. Please register first.");
     }
+    cout << "Now login......\n";
+    _sleep(500);
 }
 
 void VFS::handleRegister(string& username) {
@@ -37,7 +42,10 @@ void VFS::handleRegister(string& username) {
     if(!filesystem->registerUser(username)) {
         throw std::runtime_error("Failed to register user.");
     }
-    std::cout << "User registered successfully!\n";
+    std::cout <<GREEN<< "User registered successfully!\n"<<RESET;
+    _sleep(500);
+    cout << "Now login......\n";
+    _sleep(1000);
 }
 
 void VFS::processUserCommands(const string& username) {
@@ -55,7 +63,7 @@ void VFS::processUserCommands(const string& username) {
         try {
             client.processCommand(command);
         } catch(const std::exception& e) {
-            std::cout << "Error: " << e.what() << std::endl;
+            std::cout << RED<<"Error: " << e.what() <<RESET<< std::endl;
         }
     }
 }
@@ -99,14 +107,14 @@ void VFS::run() {
                 handleRegister(username);
             }
             else {
-                std::cout << "Invalid choice. Please try again.\n";
+                std::cout << RED<<"Invalid choice. Please try again.\n<<RESET";
                 std::cout << "Press Enter to continue...";
                 std::cin.get();
                 continue;
             }
 
             if(!filesystem->setUser(username)) {
-                std::cout << "Failed to set user: " << username << std::endl;
+                std::cout << RED<<"Failed to set user: " << username << RESET<<std::endl;
                 std::cout << "Press Enter to continue...";
                 std::cin.get();
                 continue;
@@ -122,8 +130,8 @@ void VFS::run() {
             processUserCommands(username);
 
         } catch(const std::exception& e) {
-            std::cout << "Error: " << e.what() << std::endl;
-            std::cout << "Press Enter to continue...";
+            std::cout << RED<<"Error: " << e.what() << RESET<<std::endl;
+            std::cout <<"Press Enter to continue...";
             std::cin.get();
         }
     }

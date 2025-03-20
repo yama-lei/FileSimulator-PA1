@@ -58,29 +58,34 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
             }
             Directory* dir = filesystem->getCurrentDir();
             for (int i = 1; i < len; i++) {
-                uint64_t inode = filesystem->search(cmd[i], "File");
-                if (inode == 0) {
-                    cout << RED << "ERROR: the file " << cmd[i] << " do not exists!\n" << RESET;
-                    return false;
+                string content = readFile(cmd[i]);
+                if(content!="ERROR"){
+                    cout << "===== " << cmd[i] << " =====\n";
+                    if (content != "") {
+                        cout << content << endl;
+                    }
                 }
-                string content = dynamic_cast<File*>(dir->getChild(inode))->read();
-                cout << "===== " << dir->getChild(inode)->getName() << " =====\n";
-                cout << content;
             }
             return true;
     }
     else if (first == "write") {
+        //There are two modes of writing!
         if (len == 1) {
                 cout <<RED<<"ERROR: write a file by command: write <filename>\n"<<RESET;
                 return false;
            }
 
         if (len == 2) {
+            //自己加的写作模式
             Directory* dir = filesystem->getCurrentDir();
+            uint64_t inode = filesystem->search(cmd[1], "File");
+            if (inode == 0) {
+                cout << RED << "ERROR: no such file in the current dir!\n" << RESET;
+                return false;
+            }
             string data;
             cout << "---Type your text in the command line---\n";
             getline(cin, data);
-            uint64_t inode = filesystem->search(cmd[1], "File");
             return dynamic_cast<File*>(dir->getChild(inode))->write(data);
         }
         else {
@@ -91,14 +96,7 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
             for (int i = 2; i < cmd.size(); i++) {
                 data =data+ cmd[i]+" ";
             }
-            string dataWithOutQuote = "";//去掉首尾的引号和最后多加的空格
-            for (int i = 1; i < data.size()-2; i++) {
-                dataWithOutQuote += data[i];
-                
-            }
-            Directory* dir = filesystem->getCurrentDir();
-            uint64_t inode = filesystem->search(cmd[1], "File");
-            return dynamic_cast<File*>(dir->getChild(inode))->write(dataWithOutQuote);
+            return writeFile(cmd[1], data);
         }
      }
     else if(first=="mkdir") {
@@ -143,25 +141,11 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
                 }
             }
             string path = cmd[1];
-            istringstream iss(path);
-            string token = "";
-            getline(iss, token, '\\');
-            if (token == "root") {
-                filesystem->changeDir(filesystem->resolvePath(path)->getInode());
-            }
-            else {
-                FileObj* fb = filesystem->resolvePath(path, "Directory", true);
-                if (fb == nullptr) {
-                    return false;
-                }
-                else {
-                    filesystem->changeDir(fb->getInode());
-                    return true;
-                }
-            }
+            return changeDir(path);
         }
         else {
             cout <<RED<<"ERROR: use command cd <path> to change current dir!\n"<<RESET;
+            return false;
         }
     }
     else if (first == "ls") {
@@ -183,17 +167,17 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
         cout << "The current user:  " << filesystem->getUserName() << endl;
     }
     else if (first=="clear") {
-#ifdef _WIN32
-        system("cls");
-#else
-        system("clear");
-#endif
+        #ifdef _WIN32
+            system("cls");
+        #else
+            system("clear");
+        #endif
     } 
     else if (first == "help") {
         showHelp();
     }
     else if (first == "exit"||first=="quit") {
-        
+        //exit and quit has been done in the VFS.cpp, but it sholdn't be recognize as an Invalid Command.
     }
     else if (first=="ctrl") {
         if (len == 1 || len >= 4) {
@@ -313,15 +297,22 @@ bool ClientInterface::deleteFile(const string& name) {
     // note 1: use filesystem to delete file
     return filesystem->deleteFile(name);
 }
-
+//Get the content of file with name as input
 string ClientInterface::readFile(const string& name) {
     // TODO: Read content from file with given name, returns file content as string
     // note 1: search file by name
     // note 2: cast to File type and read content
-
-    fprintf(stderr, "Error: ClientInterface::readFile() is not implemented yet!\n");
-    assert(0);
-    return "";
+    uint64_t inode = filesystem->search(name, "File");
+    if (inode == 0) {
+        cout << RED << "ERROR: the file " << name << " do not exists!\n" << RESET;
+        return "ERROR";
+    }
+    File* file = dynamic_cast<File*>(filesystem->getCurrentDir()->getChild(inode));
+    if(file==nullptr){
+        return "ERROR";
+    }
+    string content = file->read();
+    return content;
 }
 
 bool ClientInterface::writeFile(const string& name, const string& data) {
@@ -329,10 +320,18 @@ bool ClientInterface::writeFile(const string& name, const string& data) {
     // note 1: search file by name
     // note 2: process quoted strings
     // note 3: cast to File type and write content
+    string contentWithOutQuote = "";//去掉首尾的引号和最后多加的空格
+    for (int i = 1; i < data.size() - 2; i++) {
+        contentWithOutQuote += data[i];
 
-    fprintf(stderr, "Error: ClientInterface::writeFile() is not implemented yet!\n");
-    assert(0);
-    return false;
+    }
+    Directory* dir = filesystem->getCurrentDir();
+    uint64_t inode = filesystem->search(name, "File");
+    if (inode == 0) {
+        cout << RED << "ERROR: no such file in the current dir!\n" << RESET;
+        return false;
+    }
+    return  dynamic_cast<File*>(dir->getChild(inode))->write(contentWithOutQuote);
 }
 
 bool ClientInterface::createDir(const string& name) {
@@ -355,10 +354,25 @@ bool ClientInterface::changeDir(const string& path) {
     // TODO: Change current directory to given path, returns true if directory changed successfully
     // note 1: resolve path to get target directory
     // note 2: validate target is directory type to set
-
-    fprintf(stderr, "Error: ClientInterface::changeDir() is not implemented yet!\n");
-    assert(0);
-    return false;
+    // 注意，我cd ..命令走的不是这个函数
+    istringstream iss(path);
+    string token = "";
+    getline(iss, token, '\\');
+    if (token == "root") {
+        //这个地方所谓root指的是我自己加的根路径
+        filesystem->changeDir(filesystem->resolvePath(path)->getInode());
+        return true;
+    }
+    else {
+        FileObj* fb = filesystem->resolvePath(path, "Directory", true);
+        if (fb == nullptr) {
+            return false;
+        }
+        else {
+            filesystem->changeDir(fb->getInode());
+            return true;
+        }
+    }
 }
 
 void ClientInterface::listCurrentDir() {

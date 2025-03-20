@@ -228,25 +228,17 @@ bool FileSystem::registerUser(const string& username) {
         return true;
     }
     catch (exception& e) {
-        cout << e.what();
+        cout << RED<<e.what()<<RESET<<endl;
         return false;
     }
     
 }
 
-// helper function,get the dir or file with this path;
+// helper function,get the dir with this path, relative means the oath starts from the cur dir, otherwise root!;
+// AND YOU SHOULD USE THIS FUNCTION TO GET A FILE!!! Because you can get file by other simpler way!
 FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
     // TODO: resolve path, you can use strtok() in c library or istringstream with getline() in c++
     // return target of FileObj* if resolve successfully, otherwise nullptr
-    /*    istringstream ins(path);
-    string token="";
-    getline(ins, token, '\\');
-    while (getline(ins, token, '\\')) {
-          
-    }
-    这个地方存疑，我的实现可能比较奇怪；
-    */
-
     if (type == "File") {
         string parentDir = "";
         istringstream iss(path);
@@ -267,7 +259,6 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
         Directory* dir = dynamic_cast<Directory*>(resolvePath(parentDir));
         cout << "THE FUNCTION HAS Done Yet!!!\n";
         assert(0);
-        
     }
     else {
         string newPath = "";
@@ -293,6 +284,8 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
     return nullptr;
 }
 
+
+//A function used for debugging,Showing all the files and detail information of FileSystem!
 void FileSystem::display() {
     cout << "----------FILE-SYSTEM--------------\n";
     cout << "Users:[ ";
