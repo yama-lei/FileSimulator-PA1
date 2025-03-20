@@ -10,7 +10,6 @@ private:
 public:
     Directory(const string& name, const string& owner, const uint64_t& inode, FileObj* parent);
     ~Directory() {
-        cout << "Now deleting: " << this->getName()<<endl;
         for (auto& pair : children) {
             delete pair.second;
         }
@@ -35,5 +34,22 @@ public:
     // helper function
     bool isEmpty() const;
     void display(size_t indext=0) const override;
+    friend void showFileTree(Directory* dir,uint64_t indent=0) {
+        for (uint64_t i = 0; i < indent; i++) {
+            cout << " ";
+        }
+        cout << "|--- " << dir->getName()<<"\t[dir]" << endl;
+        for (auto pair:dir->children) {
+            if (pair.second->getType() == "Directory") {
+                showFileTree(dynamic_cast<Directory*>(pair.second), indent + 4);
+            }
+            else {
+                for (uint64_t i = 0; i < indent+4; i++) {
+                    cout << " ";
+                }
+                cout << "|--- " << pair.second->getName()<<endl;
+            }
+        }
+    }
 };
 

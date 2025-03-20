@@ -120,7 +120,7 @@ void Directory::display( size_t indent) const {
     for (const auto& pair : this->children) {
         for (int i = 0; i < indent; i++)
             cout << " ";
-        std::cout << "- " <<"Path: "<<pair.second->getPath()<<" " << pair.second->getType() << ": "
+        std::cout << "----" <<"Path: "<<pair.second->getPath()<<" " << pair.second->getType() << ": "
                  << pair.second->getName() << " with owner: " << pair.second->getOwner() << std::endl;
      //This part is modified by me.
         if (pair.second->getType() == "Directory") {
@@ -128,4 +128,5 @@ void Directory::display( size_t indent) const {
         }
     }
 }
+
 

@@ -6,7 +6,7 @@ class ClientInterface {
 private:
     FileSystem* filesystem;
     string username;
-
+    FileObj* tempFile;
     // helper fuction
     std::vector<string> parseCommand(const string& cmdLine);
     bool execueCommand(const std::vector<string>& cmd);
@@ -34,6 +34,8 @@ public:
     bool changeDir(const string& path);
     void listCurrentDir();
 
+    //my new function
+    void copyFile(FileObj* obj) { tempFile = obj; }
     // helper fuction for user
     string getCurrentPath() const;
     string search(const string& name, const string& type);

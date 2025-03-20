@@ -10,7 +10,6 @@ File::File(const string& name, const string& type, const string& owner, const ui
 string File::read() const {
     // TODO: return file content
     // note 1: you can choose to printf content into stdout in this function or not (Optional)
-    cout << content<<endl;
     return content;
 }
 

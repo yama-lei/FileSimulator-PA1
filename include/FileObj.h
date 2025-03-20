@@ -33,7 +33,7 @@ public:
     string getType() const { return type; }
     string getOwner() const { return owner; }
     uint64_t getInode() const { return inode; }
-    FileObj * getParent() const { return parent; }
+    FileObj* getParent() const { return parent; }
     
     //Setters
     void setName(const string& name) { this->name = name; }

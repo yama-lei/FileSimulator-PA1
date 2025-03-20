@@ -21,15 +21,17 @@ public:
 
     // File operation "local"
     File* createFile(const string& name);
+    File* createFile(const File* oldFile);
     bool deleteFile(const string& name);
 
     // Dir operation "local"
     Directory* createDir(const string& name);
+    Directory* createDir(const Directory* oldDir);
     bool deleteDir(const string& name, const string& user, bool recursive = false);
 
     // File and Dir operation "Global"
     uint64_t search(const string& name, const string& type);
-
+    
     // Getters
     string getCurrentPath() const;
     string getUserName() const;
@@ -49,7 +51,7 @@ public:
     // helper function for change dir, no useful, use search directly
     FileObj* resolvePath(const string& path,string type="Directory",bool relative=false);
     void display();
-
+    void showTree() {showFileTree(cur); };
     FileObj* inodeToPointer(uint64_t inode,Directory* rt=nullptr) {
         if (inode == 1) {
             return root;

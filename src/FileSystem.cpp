@@ -1,11 +1,14 @@
+#define RESET   "\033[0m"    // 重置颜色
+#define RED     "\033[31m"   // 红色前景
+#define GREEN   "\033[32m"   // 绿色前景
 #include "FileSystem.h"
 using namespace std;
 
 FileSystem::FileSystem(const string& username, const uint64_t& inode)
-    : root(new Directory("C:", username, inode, nullptr)), cur(root), username(username) {
+    : root(new Directory("root", username, inode, nullptr)), cur(root), username(username) {
     // no change
-    users.insert(username);
-    config_table.insert({ "C: Directory",root->getInode()});
+    users.insert(username);//注意，如果你要修改这里的默认根节点位置的话，请修改三处地方，这里下面和上面2处+ClientInterface的124行
+    config_table.insert({ "root Directory",root->getInode()});
 }
 
 // Navigation
@@ -15,11 +18,11 @@ bool FileSystem::changeDir(const uint64_t& inode) {
     // note 2: update current directory pointer
     FileObj* dir = inodeToPointer(inode);
     if (dir == nullptr) {
-        cout << "ERROR: check if the FileObj with inode " << inode << " is a Directory or if the inode exists!\n";
+        cout << RED<<"ERROR: check if the FileObj with inode " << inode << " is a Directory or if the inode exists!\n"<<RESET;
     }
     else {
         cur = dynamic_cast<Directory*>(dir);
-        cout << "The current path is changed! " << cur->getPath()<<endl;
+        cout << GREEN<< "The current path is set to " << cur->getPath()<<endl<<RESET;
         return true;
     }
     return false;
@@ -38,10 +41,20 @@ File* FileSystem::createFile(const string& name) {
         return newFile;
     }
     else {
-        cout << "ERROR: the file " << name << " already exists!\n";
+        cout<<RED << "ERROR: the file " << name << " already exists!\n"<<RESET;
     }
     
     return nullptr;
+}
+
+//create a copy of oldFile in the current dir of FileSystem
+File* FileSystem::createFile(const File* oldFile) {
+    File* newFile = createFile(oldFile->getName() + "(copy)");
+    if (newFile == nullptr) {
+        return nullptr;
+    }
+    newFile->write(oldFile->read());
+    return newFile;
 }
 //delete the file in the current dir;
 bool FileSystem::deleteFile(const string& name){
@@ -58,15 +71,15 @@ bool FileSystem::deleteFile(const string& name){
                 config_table.erase(cur->getPath() +'\\'+name + " File");
             }
             else {
-                cout << "ERROR: the user " << username << " do not have the authority to delete this file!\n";
+                cout << RED<<"ERROR: the user " << username << " do not have the authority to delete this file!\n"<<RESET;
             }
         }
         else {
-            cout << "ERROR: " << name << " is not a File! Please check and call deleteDir() instead!\n";
+            cout << RED<<"ERROR: " << name << " is not a File! Please check and call deleteDir() instead!\n"<<RESET;
         }
     }
     else {
-        cout << "ERROR: the file " << name << " do not exist!\n";
+        cout << RED<<"ERROR: the file " << name << " do not exist!\n"<<RESET;
     }
     return false;
 }
@@ -84,25 +97,47 @@ Directory* FileSystem::createDir(const string& name) {
         return newDir;
     }
     else {
-        cout << "ERROR: the directory already exists\n";
+        cout << RED<<"ERROR: the directory already exists\n"<<RESET;
     }
-
     return nullptr;
 }
 
+//make a deep copy of the dir in the current dir of filesystem
+Directory* FileSystem::createDir(const Directory* oldDir) {
+    Directory* oldCur = cur;//保存当下的目录
+    Directory* newDirectory = createDir(oldDir->getName() + "(copy)");
+    vector<FileObj*> oldDirSons = oldDir->getAll();
+    cur = newDirectory;//进入新目录
+    for (FileObj* obj : oldDirSons) {
+        string type = obj->getType();
+        if (type == "Directory") {
+            createDir(dynamic_cast<Directory*>(obj));
+        }
+        else {
+            createFile(dynamic_cast<File*>(obj));
+        }
+        //recursively call the function
+    }
+    cur = oldCur;//最后记得回到最初的目录；
+    return newDirectory;
+}
 bool FileSystem::deleteDir(const string& name,const string& user, bool recursive){
     // TODO: Delete directory with given name from current directory, return true if delete target successfully, otherwise false 
     // note 1: if recursive is true, delete all contents and their config_table entries, and check permission via user and directory owner
     // note 2: if recursive is false, only delete if empty
+    
     if (config_table.count(cur->getPath() +'\\'+name + " Directory") == 0) {
-        cout << "ERROR: the directory do not exist;\n";
+        cout << RED<<"ERROR: the directory do not exist;\n"<<RESET;
         return false;
     }
     Directory* dir = dynamic_cast<Directory*>(cur->getChild(config_table[cur->getPath() +'\\'+name + " Directory"]));
+    if (dir->getOwner() != user) {
+        cout << RED << "ERROR: User " << user << " do not have the authority to delete this dir!\n" << RESET;
+    }
     if (recursive) {
         cur->removeDir(search(name, "Directory"));
         config_table.erase(cur->getPath()+'\\'+name + " Directory");
-        cout << "The directory " << name << " is deleted successfully!\n";
+        cout << GREEN<<"The directory " << name << " is deleted successfully!\n"<<RESET;
         return true;
     }
     else {
@@ -112,7 +147,7 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
             return true;
         }
         else {
-            cout << "ERROR: the directory is not empty, try to add parameter -r\n";
+            cout << RED<<"ERROR: the directory is not empty, try to add parameter -r\n"<<RESET;
             return false;
         }
     }
@@ -152,7 +187,7 @@ bool FileSystem::setUser(const string& username) {
     // note 1: check if the user is in set of users
     // note 2: update current user
     if (!hasUser(username)) {
-        cout << "ERROR: The user do not exist,register first!\n";
+        cout << RED<<"ERROR: The user do not exist,register first!\n"<<RESET;
     }
     else {
         this->username = username;
@@ -244,7 +279,7 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
         }
 
             if (config_table.count(newPath + " " + type) == 0) {
-                cout << "ERROR: the path do not exists\n";
+                cout << RED<<"ERROR: the path do not exists\n"<<RESET;
                 return nullptr;
             }
             else {
