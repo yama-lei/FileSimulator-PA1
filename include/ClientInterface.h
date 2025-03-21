@@ -32,6 +32,7 @@ public:
     bool createDir(const string& name);
     bool deleteDir(const string& name, bool recursive = false);
     bool changeDir(const string& path);
+    bool changeDir(const vector<string> pathToken);
     void listCurrentDir();
 
     //my new function

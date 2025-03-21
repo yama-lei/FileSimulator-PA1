@@ -111,37 +111,32 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
             if (cmd[1] == "-r") {
                 if (len != 3) {
                     cout <<RED<<"ERROR: remove the dir by command:  rmdir [-r] <dirname> \n"<<RESET;
+                    return false;
                 }
 
                 deleteDir(cmd[2], true);
+                return true;
             }
             else {
                 deleteDir(cmd[1], false);
+                return true;
             }
+            
         }
         else {
             cout <<RED<<"ERROR: remove the dir by command:  rmdir [-r] <dirname> \n"<<RESET;
+            return false;
         }
     }
     else if (first == "cd") {
         if (len == 2) {
-            if (cmd[1] == "..") {
-                Directory* cur = filesystem->getCurrentDir();
-
-
-                FileObj* p = cur->getParent();
-                Directory* newCur = dynamic_cast<Directory*>(p);
-                if (newCur != nullptr) {
-                    filesystem->setCurrentDir(newCur);
-                    return true;
-                }
-                else {
-                    cout << RED << "ERROR: The root directory has not parent root!\n"<<RESET;
-                    return false;
-                }
+            istringstream iss(cmd[1]);
+            string token;
+            vector<string> pathToken;
+            while (getline(iss, token, '\\')) {
+                pathToken.push_back(token);
             }
-            string path = cmd[1];
-            return changeDir(path);
+            return changeDir(pathToken);
         }
         else {
             cout <<RED<<"ERROR: use command cd <path> to change current dir!\n"<<RESET;
@@ -150,14 +145,23 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
     }
     else if (first == "ls") {
         if (len ==1) {
-           Directory* dir= filesystem->getCurrentDir();
-           for (auto son : dir->getAll()) {
-               cout << son->getName() << " ";
-           }
-           cout << endl;
+            if (username == "root") {
+                Directory* dir = filesystem->getCurrentDir();
+                for (auto son : dir->getAll()) {
+                    cout << son->getName() << " \towner:" << son->getOwner() << endl;
+                }
+            }  
+            else {
+                Directory* dir = filesystem->getCurrentDir();
+                for (auto son : dir->getAll()) {
+                    cout << son->getName() << endl;
+                }
+            }
+            return true;
         }
         else {
             cout <<RED<<"ERROR: use command ls to list all the items in the current dir\n"<<RESET;
+            return false;
         }
     }
     else if (first == "pwd") {
@@ -350,7 +354,36 @@ bool ClientInterface::deleteDir(const string& name, bool recursive) {
     return   filesystem->deleteDir(name,filesystem->getUserName(), recursive);
 }
 
-bool ClientInterface::changeDir(const string& path) {
+bool ClientInterface::changeDir(const vector<string> pathToken) {
+    if (pathToken.size() == 0) {
+        return true;
+    }
+    vector<string> newPathToken;
+    for (int i = 1; i < pathToken.size(); i++) {
+        newPathToken.push_back(pathToken[i]);
+    }
+    if (pathToken[0] == "..") {
+        filesystem->setCurrentDir(dynamic_cast<Directory*>(filesystem->getCurrentDir()->getParent()));
+        //目录往上面走一级
+        return changeDir(newPathToken);
+    }
+    else if (pathToken[0] == ".") {
+        return changeDir(newPathToken);
+    }
+    else {
+        uint64_t inode=filesystem->search(pathToken[0],"Directory");
+        if (inode == 0) {
+            cout << RED << "ERROR: no such file in the current dir!\n" << RESET;
+            }
+        else {
+            filesystem->changeDir(inode);
+            return changeDir(newPathToken);
+        }
+    }
+}
+
+//警告，自从3.21重写了上面那个更加优雅的函数之后，这个函数就不在使用！！！但是这个函数仍能正确执行功能，即，根据path，更改对应的路径
+    bool ClientInterface::changeDir(const string& path) {
     // TODO: Change current directory to given path, returns true if directory changed successfully
     // note 1: resolve path to get target directory
     // note 2: validate target is directory type to set
@@ -373,6 +406,8 @@ bool ClientInterface::changeDir(const string& path) {
             return true;
         }
     }
+
+    //还未实现cd ../../之类的指令
 }
 
 void ClientInterface::listCurrentDir() {

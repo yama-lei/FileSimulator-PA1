@@ -23,7 +23,7 @@ bool File::write(const string &data) {
         content.replace(index, 2, "\n");
         index = content.find("\\n", index);
     }
-    return false;
+    return true;
 }
 
 string File::getContent() const {
@@ -33,6 +33,9 @@ string File::getContent() const {
 
 // helper function
 void File::display(size_t indent) const {
-    for (size_t i = 0; i < indent; i++)cout << " ";
+    //搭配Directory类的display函数使用，用于展示文件夹的信息，调试使用，展示目录用的不是这个函数；
+    for (size_t i = 0; i < indent; i++) {
+        cout << " ";
+    }
     std::cout << "[File: " << getName() << "] Size: " << content.length() << " bytes" << std::endl;
 }

@@ -61,10 +61,12 @@ public:
         }
         vector<FileObj*> sons=(rt->getAll());
         for (auto obj : sons) {
+            //递归地查找inode对应的指针
             if (obj->getInode() == inode) {
                 return obj;
             }
             if(obj->getType()=="Directory") {
+                //如果当前遍历到的是一个dir，那么从先把这个dir给递归地查找一次
                 FileObj* ptr = inodeToPointer(inode, dynamic_cast<Directory*>(obj));
                 if (ptr !=nullptr ) {
                     return ptr;

@@ -61,6 +61,9 @@ void VFS::processUserCommands(const string& username) {
         }
 
         try {
+            if (command == "") {
+                throw runtime_error("Empty command! Use  help to check valid commands!");
+            }
             client.processCommand(command);
         } catch(const std::exception& e) {
             std::cout << RED<<"Error: " << e.what() <<RESET<< std::endl;

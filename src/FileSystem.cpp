@@ -65,23 +65,28 @@ bool FileSystem::deleteFile(const string& name){
     if (config_table.count(cur->getPath() +'\\' + name + " File") != 0) {
         uint64_t fileInode = config_table[cur->getPath() +'\\'+name + " File"];
         if (cur->getChild(fileInode)->getType() == "File") {
-            if (cur->getChild(fileInode)->getOwner()==username) {
+            if (cur->getChild(fileInode)->getOwner()==username||username=="root") {
                 cur->remove(fileInode);
                 //这里调用remove函数会自己把这个文件删除，并且使得cur目录下没有这个文件
                 config_table.erase(cur->getPath() +'\\'+name + " File");
+                cout << GREEN << "The file  " << name << " is deleted succesfully!\n" << RESET;
+                return true;
             }
             else {
                 cout << RED<<"ERROR: the user " << username << " do not have the authority to delete this file!\n"<<RESET;
+                return false;
             }
         }
         else {
             cout << RED<<"ERROR: " << name << " is not a File! Please check and call deleteDir() instead!\n"<<RESET;
+            return false;
         }
     }
     else {
         cout << RED<<"ERROR: the file " << name << " do not exist!\n"<<RESET;
+        return false;
     }
-    return false;
+    return true;
 }
 
 // Dir operation "local"
@@ -127,16 +132,34 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
     // note 2: if recursive is false, only delete if empty
     
     if (config_table.count(cur->getPath() +'\\'+name + " Directory") == 0) {
-        cout << RED<<"ERROR: the directory do not exist;\n"<<RESET;
+        cout << RED<<"ERROR: the directory do not exist\n"<<RESET;
         return false;
     }
     Directory* dir = dynamic_cast<Directory*>(cur->getChild(config_table[cur->getPath() +'\\'+name + " Directory"]));
-    if (dir->getOwner() != user) {
-        cout << RED << "ERROR: User " << user << " do not have the authority to delete this dir!\n" << RESET;
+    if (dir->getOwner() != user&&user!="root") {
+        //如果既不是root，又不是onwer
+        cout << RED << "ERROR: User " << user << " do not have the authority to delete this directory!\n" << RESET;
+        return false;
     }
     if (recursive) {
+        Directory* dirToDelete = dynamic_cast<Directory*>(cur->getChild(search(name, "Directory")));
+        Directory* oldCur = cur;
+        setCurrentDir(dirToDelete);
+        //在删除这个文件夹下面的东西之前，要先设置cur
+        for (auto son : dirToDelete->getAll()) {
+            if (son->getType() == "File") {
+                deleteFile(son->getName());
+            }
+            else {
+                //这个地方有待考究，涉及到文件删除的权限问题，dir1/dir2结构中，如果dir1和dir2的owner不一样，删除dir1的时候应该怎么办？ 我这里是允许dir1的owner删除这个文件夹下面全部内容；
+                deleteDir(son->getName(), son->getOwner(), true);
+                //这里无论文件夹是否为empty都用的递归删除，因为是一样的。
+            }
+        }
+        setCurrentDir(oldCur);
         cur->removeDir(search(name, "Directory"));
         config_table.erase(cur->getPath()+'\\'+name + " Directory");
+        
         cout << GREEN<<"The directory " << name << " is deleted successfully!\n"<<RESET;
         return true;
     }
@@ -144,6 +167,7 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
         if (dir->isEmpty()) {
             cur->removeDir(search(name, "Directory"));
             config_table.erase(cur->getPath() + '\\' + name + " Directory");
+            cout << GREEN << "The directory " << name << " is deleted successfully!\n" << RESET;
             return true;
         }
         else {
@@ -240,6 +264,7 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
     // TODO: resolve path, you can use strtok() in c library or istringstream with getline() in c++
     // return target of FileObj* if resolve successfully, otherwise nullptr
     if (type == "File") {
+// 因为寻找File这一部分功能可以使用其他的方法实现，这个函数实际上只承担了找dir的任务；
         string parentDir = "";
         istringstream iss(path);
         string token;
@@ -247,6 +272,7 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
         while (getline(iss, token, '\\')) {
             temp.push_back(token);
         }
+        string name = temp.back();
         temp.pop_back();//删除最后一个
         for (int i = 0; i < temp.size(); i++) {
             if (i == 0) {
@@ -257,10 +283,15 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
             }
         }
         Directory* dir = dynamic_cast<Directory*>(resolvePath(parentDir));
-        cout << "THE FUNCTION HAS Done Yet!!!\n";
-        assert(0);
+        uint64_t inode = search(name,"File");
+        FileObj* obj = dir->getChild(inode);
+        if (obj != nullptr) {
+            return obj;
+        }
+        return nullptr;
     }
     else {
+        //如果是directory的话。
         string newPath = "";
         if (relative) {
             newPath= cur->getPath() +"\\" + path;
@@ -268,7 +299,7 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
         else {
              newPath = path;
         }
-
+        //上面判断是否要解析相对路径
             if (config_table.count(newPath + " " + type) == 0) {
                 cout << RED<<"ERROR: the path do not exists\n"<<RESET;
                 return nullptr;
@@ -278,6 +309,7 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
                 if (inode == 1) {
                     return root;
                 }
+                //下面是一个辅助函数，专门实现Directory的inode到指针的映射
                 return inodeToPointer(inode);
             }
     }
@@ -285,7 +317,7 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
 }
 
 
-//A function used for debugging,Showing all the files and detail information of FileSystem!
+//A function used for debugging,Showing all the files and detail information of FileSystem!调试专用
 void FileSystem::display() {
     cout << "----------FILE-SYSTEM--------------\n";
     cout << "Users:[ ";
