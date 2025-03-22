@@ -8,7 +8,6 @@ ClientInterface::ClientInterface(const string& username, FileSystem* filesystem)
     tempFile = nullptr;
     // no change
 }
-
 std::vector<string> ClientInterface::parseCommand(const string& cmdLine) {
     // TODO: Parse command line into vector of arguments, returns vector of parsed arguments
     // note 1: split by whitespace, you can use strtok() in c or istringstream in c++ to get tokens
@@ -133,7 +132,7 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
             istringstream iss(cmd[1]);
             string token;
             vector<string> pathToken;
-            while (getline(iss, token, '\\')) {
+            while (getline(iss, token, '/')) {
                 pathToken.push_back(token);
             }
             return changeDir(pathToken);
@@ -237,10 +236,72 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
     else if (first == "tree") {
         if (len != 1) {
             cout << RED << "ERROR: use tree to show the structure of the filesystem\n" << RESET;
+            return false;
         }
         filesystem->showTree();
+        return true;
     }
+    else if (first == "echo") {
+        if (len == 1) {
+            cout << RED << "ERROR: use ehco <content> to repeat your input\n" << RESET;
+            return false;
+         }
+        if (cmd[1][0] != '\"' || cmd.back().back() != '\"') {
+            cout << RED << "ERROR: The writing content should be quoted with a pair of \"\"!\n" << RESET;
+            return false;
+        }
+        string data = "";
+        for (int i = 1; i < cmd.size(); i++) {
+            data = data + cmd[i] + " ";
+        }
+        string dataWithoutQuatation = "";//去除首位的“”和末尾多出来的空格
 
+        for (int i = 1; i < data.size() - 2; i++) {
+            dataWithoutQuatation += data[i];
+        }
+        cout << dataWithoutQuatation << endl;
+        return true;
+    }
+    else if (first=="users") {
+        //展示所有的用户
+        if (username != "root") {
+            for (string user : filesystem->getUsers()) {
+                cout << "User: \t" << user << endl;
+                //对于一般的用户而言，就没必要展示密码了；
+            }
+            return true;
+        }
+        if (len != 1) {
+            cout << RED << "ERROR: use command 'users' to list all the users\n"<<RESET;
+            return false;
+         }
+
+        for (string user : filesystem->getUsers()) {
+            cout << "User: \t" << user << "  password: " << filesystem->getUserPassword(user) << endl;
+        }
+        cout << "=== Tips: you can use command reset password <username> to reset the password of user listed above(including 'root') ===\n";
+    }
+    else if (first == "reset") {
+        if (filesystem->getUserName() != "root") {
+            cout << RED << "ERROR: only root user can use this command!\n"<<RESET;
+            return false;
+        }
+        if (len != 3||cmd[1]!="password") {
+            cout << RED << "ERROR: use command 'reset password <username>' to reset the password of any user\n"<<RESET;
+            return false;
+        }
+        if (filesystem->hasUser(cmd[2])) {
+            string newPass = "";
+            cout << "Please input the new password of user " << cmd[2]<<endl;
+            getline(cin, newPass);
+            return  filesystem->setUserPassword(cmd[2],newPass);
+
+        }
+        else {
+            cout << RED << "ERROR: the user do not exists\n"<<RESET;
+            return false;
+        }
+    }
     else {
         cout <<RED<<"ERROR: Unkonwn command!\n"<<RESET;
     }
@@ -278,7 +339,10 @@ void ClientInterface::showHelp() const {
         << "  ctrl v                   * To paste the copied file or directory in the current directory\n"
         << "  cd ..                    * To get to the parent dir\n"
         << "  tree                     * To get the tree structure of this file\n"
-        << "  write <filename>         * Enter the writing mode which is more flexible and convient!\n";
+        << "  write  <filename>        * Enter the writing mode which is more flexible and convient!\n"
+        << "  echo   <content>         * Repeat what the user input in the command                  \n"
+        << "  users                    * List all the users of the FileSystem.If the current user is 'root', all users' passwords will be shown as well. \n"
+        << "  reset password <username>* ROOT ONLY! Reset the pw of any user.Error will occur if the user is not 'root'\n";
 }
 
 
@@ -288,11 +352,11 @@ bool ClientInterface::createFile(const string& name) {
     // note 2: use filesystem to create file
     //remember to set the owner of the file!!!!!!! Because the FileSystem don't take this jobs!
     //note by 3/19: the sentence above is wrong!
-    if (name.find('\\')==string::npos) {
+    if (name.find('/')==string::npos) {
         filesystem->createFile(name);
     }
     else {
-        cout <<RED<<"ERROR: the name of the file shouldn't contain '\\'\n"<<RESET;
+        cout <<RED<<"ERROR: the name of the file shouldn't contain '/'\n"<<RESET;
         return false;
     }
 }
@@ -395,7 +459,7 @@ bool ClientInterface::changeDir(const vector<string> pathToken) {
     // 注意，我cd ..命令走的不是这个函数
     istringstream iss(path);
     string token = "";
-    getline(iss, token, '\\');
+    getline(iss, token, '/');
     if (token == "root") {
         //这个地方所谓root指的是我自己加的根路径
         filesystem->changeDir(filesystem->resolvePath(path)->getInode());

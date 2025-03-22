@@ -21,25 +21,52 @@ void VFS::printPrompt(const string& username, const string& path) const {
 }
 
 void VFS::handleLogin(string& username) {
-    std::cout << "User Login (Please input your username): \n";
+    std::cout << "===== User Login =====\n";
+    cout << "Please input the name of user\n";
     std::getline(std::cin, username);
-    
     if(!filesystem->hasUser(username)) {
         throw std::runtime_error("User does not exist. Please register first.");
     }
-    cout << "Now login......\n";
-    _sleep(500);
+    if (username == "root"&& filesystem->getUserPassword("root") == "password") {
+            //root³õ´ÎµÇÂ¼
+            cout << "The default password for root user is 'password', please reset your password\n";
+            cout << "Set your new password: \n";
+            string newPass = "";
+            getline(cin, newPass);
+            while (!filesystem->setUserPassword("root", newPass)) {
+                cout << "Input your new password: \n";
+                getline(cin, newPass);
+            }
+            cout << GREEN << "Success! your new password is " << newPass << endl << RESET;
+            cout << "Now login......\n";
+            _sleep(1000);
+        }
+    else {
+        cout << "Please input your password: \n";
+        string password;
+        getline(cin, password);
+        if (password == filesystem->getUserPassword(username)) {
+            cout << GREEN << "Correct!\n" << RESET;
+            cout << "Now login......\n";
+            _sleep(500);
+        }
+        else {
+            throw std::runtime_error("Wrong Password. Please Try again or login in as root account to reset your password!.");
+        }
+    }
 }
 
 void VFS::handleRegister(string& username) {
-    std::cout << "Register new user (Please input desired username): \n";
+    std::cout << "===== Register new user ===== \n";
+    cout << "Please input desired username \n";
     std::getline(std::cin, username);
-    
+    cout << "Please input your password \n";
+    string password;
+    std::getline(std::cin, password);
     if(filesystem->hasUser(username)) {
         throw std::runtime_error("Username already exists. Please try another one.");
     }
-    
-    if(!filesystem->registerUser(username)) {
+    if(!filesystem->registerUser(username,password)) {
         throw std::runtime_error("Failed to register user.");
     }
     std::cout <<GREEN<< "User registered successfully!\n"<<RESET;
@@ -110,7 +137,7 @@ void VFS::run() {
                 handleRegister(username);
             }
             else {
-                std::cout << RED<<"Invalid choice. Please try again.\n<<RESET";
+                std::cout << RED<<"Invalid choice. Please try again.\n"<<RESET;
                 std::cout << "Press Enter to continue...";
                 std::cin.get();
                 continue;

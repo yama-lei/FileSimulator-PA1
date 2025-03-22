@@ -5,7 +5,6 @@
 #include "FileObj.h"
 
 void testClientInterface();
-void testFileSystem();
 
 int main() {
     VFS vfs;
@@ -27,26 +26,6 @@ void testFileAndDirectory() {
     dir.display();
 }
 
-void testFileSystem() {
-    FileSystem fs("root", InodeFactory::generateInode());
-    fs.registerUser("yama");
-    fs.setUser("yama");
-    Directory* dir = fs.createDir("Dir1");
-    fs.registerUser("Jam");
-    File* fr = fs.createFile("File1");
-    dir->add(fr);
-    fs.setUser("Tam");
-    fs.setUser("Jam");
-    fs.createDir("dir2");
-    fs.createFile("file3");
-    fs.createFile("file4");
-    fs.display();
-    fs.changeDir(fs.search("dir2", "Directory"));
-    fs.createFile("test");
-    fs.display();
-    fs.deleteFile("test");
-    fs.display();
-}
 
 void testClientInterface() {
     ClientInterface ci("yama", new FileSystem("yama", InodeFactory::generateInode()));

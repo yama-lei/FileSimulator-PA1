@@ -11,6 +11,7 @@ private:
 
     string username;
     std::set<string> users;
+    std::unordered_map<string, string> passwords;
     std::unordered_map<string, uint64_t> config_table;
 public:
     FileSystem(const string& username, const uint64_t& inode);
@@ -35,14 +36,20 @@ public:
     // Getters
     string getCurrentPath() const;
     string getUserName() const;
-
+    string getUserPassword(string name) { 
+        if (passwords.count(name) == 0) {
+            return "";
+        }
+        return passwords[name]; 
+    };
+    const set<string>& getUsers() { return users; }
     // Setters
     bool setUser(const string& username);
     bool setCurrentDir(Directory* newDir);
-
+    bool setUserPassword(string user,string newPassword);
     // User management methods
     bool hasUser(const string& username) const;
-    bool registerUser(const string& username);
+    bool registerUser(const string& username,const string& password);
 
     // helper function
     Directory* getCurrentDir() const { return cur; }

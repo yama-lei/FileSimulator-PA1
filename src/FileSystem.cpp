@@ -7,8 +7,9 @@ using namespace std;
 FileSystem::FileSystem(const string& username, const uint64_t& inode)
     : root(new Directory("root", username, inode, nullptr)), cur(root), username(username) {
     // no change
-    users.insert(username);//注意，如果你要修改这里的默认根节点位置的话，请修改三处地方，这里下面和上面2处+ClientInterface的124行
+    users.insert(username);//注意，如果你要修改这里的默认根节点位置的话，请修改三处地方，这里下面和上面2处+ClientInterface的cd逻辑check是否为根路径部分（现已废除）
     config_table.insert({ "root Directory",root->getInode()});
+    passwords.insert({ username,"password" });//filesystem构造的时候，root用户的默认密码是password
 }
 
 // Navigation
@@ -33,10 +34,10 @@ File* FileSystem::createFile(const string& name) {
     // TODO: Create a new file in current directory, return File* if create successfully, otherwise nullptr
     // note 1: check if name already exists
     // note 2: generate new inode via InodeFactory, and update config_table
-    if (config_table.count(cur->getPath() + '\\' + name + " File") == 0) {
+    if (config_table.count(cur->getPath() + '/' + name + " File") == 0) {
         File* newFile = new File(name, "File", this->username, InodeFactory::generateInode(), cur);
-        newFile->setPath(cur->getPath() +'\\'+name);
-        config_table.insert({ cur->getPath() +'\\'+name + " File",newFile->getInode() });
+        newFile->setPath(cur->getPath() +'/'+name);
+        config_table.insert({ cur->getPath() +'/'+name + " File",newFile->getInode() });
         cur->add(newFile);
         return newFile;
     }
@@ -62,13 +63,13 @@ bool FileSystem::deleteFile(const string& name){
     // TODO: Delete file with given inode from current directory, return true if delete successfully, otherwise false
     // note 1: check if the inode exists and if target is a file, and check permission via user and file owner
     // note 2: update config_table
-    if (config_table.count(cur->getPath() +'\\' + name + " File") != 0) {
-        uint64_t fileInode = config_table[cur->getPath() +'\\'+name + " File"];
+    if (config_table.count(cur->getPath() +'/' + name + " File") != 0) {
+        uint64_t fileInode = config_table[cur->getPath() +'/'+name + " File"];
         if (cur->getChild(fileInode)->getType() == "File") {
             if (cur->getChild(fileInode)->getOwner()==username||username=="root") {
                 cur->remove(fileInode);
                 //这里调用remove函数会自己把这个文件删除，并且使得cur目录下没有这个文件
-                config_table.erase(cur->getPath() +'\\'+name + " File");
+                config_table.erase(cur->getPath() +'/'+name + " File");
                 cout << GREEN << "The file  " << name << " is deleted succesfully!\n" << RESET;
                 return true;
             }
@@ -94,11 +95,11 @@ Directory* FileSystem::createDir(const string& name) {
     // TODO: Create a new directory in current directory, return Directory* if create successfully, otherwise nullptr
     // note 1: check if name already exists
     // note 2: generate new inode via InodeFactory, and update config_table
-    if (config_table.count(cur->getPath() +'\\'+name + " Directory") == 0) {
+    if (config_table.count(cur->getPath() +'/'+name + " Directory") == 0) {
         Directory* newDir = new Directory(name, username, InodeFactory::generateInode(), cur);
-        newDir->setPath(cur->getPath() +'\\'+name);
+        newDir->setPath(cur->getPath() +'/'+name);
         cur->add(newDir);
-        config_table.insert({cur->getPath()+'\\'+name + " Directory" ,newDir->getInode()});
+        config_table.insert({cur->getPath()+'/'+name + " Directory" ,newDir->getInode()});
         return newDir;
     }
     else {
@@ -131,11 +132,11 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
     // note 1: if recursive is true, delete all contents and their config_table entries, and check permission via user and directory owner
     // note 2: if recursive is false, only delete if empty
     
-    if (config_table.count(cur->getPath() +'\\'+name + " Directory") == 0) {
+    if (config_table.count(cur->getPath() +'/'+name + " Directory") == 0) {
         cout << RED<<"ERROR: the directory do not exist\n"<<RESET;
         return false;
     }
-    Directory* dir = dynamic_cast<Directory*>(cur->getChild(config_table[cur->getPath() +'\\'+name + " Directory"]));
+    Directory* dir = dynamic_cast<Directory*>(cur->getChild(config_table[cur->getPath() +'/'+name + " Directory"]));
     if (dir->getOwner() != user&&user!="root") {
         //如果既不是root，又不是onwer
         cout << RED << "ERROR: User " << user << " do not have the authority to delete this directory!\n" << RESET;
@@ -158,7 +159,7 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
         }
         setCurrentDir(oldCur);
         cur->removeDir(search(name, "Directory"));
-        config_table.erase(cur->getPath()+'\\'+name + " Directory");
+        config_table.erase(cur->getPath()+'/'+name + " Directory");
         
         cout << GREEN<<"The directory " << name << " is deleted successfully!\n"<<RESET;
         return true;
@@ -166,7 +167,7 @@ bool FileSystem::deleteDir(const string& name,const string& user, bool recursive
     else {
         if (dir->isEmpty()) {
             cur->removeDir(search(name, "Directory"));
-            config_table.erase(cur->getPath() + '\\' + name + " Directory");
+            config_table.erase(cur->getPath() + '/' + name + " Directory");
             cout << GREEN << "The directory " << name << " is deleted successfully!\n" << RESET;
             return true;
         }
@@ -183,11 +184,11 @@ uint64_t FileSystem::search(const string& name, const string& type) {
     // TODO: Search name in config_table, return inode if found in config_table, 0 if not found
     // note 1: try to find relative path (current path + name) in config_table
     // note 2: try to find absolute path (from root) in config_table first
-    if (config_table.count(cur->getPath() + '\\' + name + " " + type) == 0) {
+    if (config_table.count(cur->getPath() + '/' + name + " " + type) == 0) {
         return 0;
     }
     else {
-        return config_table[cur->getPath() + '\\' + name + " " + type];
+        return config_table[cur->getPath() + '/' + name + " " + type];
     }
 }
 
@@ -234,21 +235,33 @@ bool FileSystem::setCurrentDir(Directory* newDir){
 // User management methods
 bool FileSystem::hasUser(const string& username) const {
     // TODO: Check if user exists in users set, returns true if username exists, otherwise false
-    if (users.count(username) == 0) {
+    if (users.count(username) == 0||passwords.count(username)==0) {
+        //同时检查passwords and users
         return false;
     }
     else {
         return true;
     }
 }
-
-bool FileSystem::registerUser(const string& username) {
+bool FileSystem::setUserPassword(string user,string newPassword) {
+    if (hasUser(user)) {
+        if (newPassword == getUserPassword(user)) {
+            cout << RED << "The new password can't be the same with the old one! Please try another password \n" << RESET;
+            return false;
+        }
+        passwords[user] = newPassword;
+        return true;
+    }
+    return false;
+}
+bool FileSystem::registerUser(const string& username,const string & password) {
     // TODO： Check if user exists in users set, return true if register successfully, otherwise false
     try {
         if (hasUser(username)) {
             throw runtime_error("The user already exits!");
         }
         users.insert(username);
+        passwords.insert({ username,password });
         return true;
     }
     catch (exception& e) {
@@ -269,7 +282,7 @@ FileObj* FileSystem::resolvePath(const string& path,string type,bool relative) {
         istringstream iss(path);
         string token;
         vector<string> temp;
-        while (getline(iss, token, '\\')) {
+        while (getline(iss, token, '/')) {
             temp.push_back(token);
         }
         string name = temp.back();

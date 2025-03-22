@@ -4,7 +4,7 @@ Directory::Directory(const string& name, const string& owner, const uint64_t& in
     :FileObj(name, "", "Directory", owner, inode, parent) { 
     // TODO: finish construction function like File class
     if (parent != nullptr) {
-        this->setPath(parent->getPath() + '\\' + name);
+        this->setPath(parent->getPath() + '/' + name);
     } else {
         this->setPath(name);  
     }
@@ -21,7 +21,7 @@ bool Directory::add(FileObj* child) {
     }
     child->setParent(this);
     this->children[child->getInode()] = child;
-    child->setPath(this->getPath() + '\\' + child->getName());
+    child->setPath(this->getPath() + '/' + child->getName());
     return true;
 }
 
