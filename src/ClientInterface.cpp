@@ -137,6 +137,7 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
                 pathToken.push_back(token);
             }
             return changeDir(pathToken);
+            //统一走这个函数化简路径
         }
         else {
             cout <<RED<<"ERROR: use command cd <path> to change current dir!\n"<<RESET;
@@ -363,7 +364,11 @@ bool ClientInterface::changeDir(const vector<string> pathToken) {
         newPathToken.push_back(pathToken[i]);
     }
     if (pathToken[0] == "..") {
-        filesystem->setCurrentDir(dynamic_cast<Directory*>(filesystem->getCurrentDir()->getParent()));
+        auto parent = filesystem->getCurrentDir()->getParent();
+        //如果在根路径下，cd ..应该不报错
+        if (parent != nullptr) {
+            filesystem->setCurrentDir(dynamic_cast<Directory*>(parent));
+        }
         //目录往上面走一级
         return changeDir(newPathToken);
     }
