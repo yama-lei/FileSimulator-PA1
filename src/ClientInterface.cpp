@@ -61,7 +61,13 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
                 if(content!="ERROR"){
                     cout << "===== " << cmd[i] << " =====\n";
                     if (content != "") {
-                        cout << content << endl;
+                        //如果内容句末没有空格那么就不需要自己额外加空格了
+                        if (content.back() == '\n') {
+                            cout << content;
+                        }
+                        else {
+                            cout << content << endl;
+                        }
                     }
                 }
             }
@@ -88,7 +94,7 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
             return dynamic_cast<File*>(dir->getChild(inode))->write(data);
         }
         else {
-            if (cmd[2][0] != '\"' || cmd.back().back() != '\"') {
+            if (cmd[2][0] != '\"' || cmd.back().back() != '\"'||cmd[2].size()==1) {
                 cout << RED << "ERROR: The writing content should be quoted with a pair of \"\"!\n" << RESET;
             }
             string data = "";
@@ -277,7 +283,7 @@ bool ClientInterface::execueCommand(const std::vector<string>& cmd) {
          }
 
         for (string user : filesystem->getUsers()) {
-            cout << "User: \t" << user << "  password: " << filesystem->getUserPassword(user) << endl;
+            cout << "User: \t" << user << "\tpassword: " << filesystem->getUserPassword(user) << endl;
         }
         cout << "=== Tips: you can use command reset password <username> to reset the password of user listed above(including 'root') ===\n";
     }
@@ -341,8 +347,8 @@ void ClientInterface::showHelp() const {
         << "  tree                     * To get the tree structure of this file\n"
         << "  write  <filename>        * Enter the writing mode which is more flexible and convient!\n"
         << "  echo   <content>         * Repeat what the user input in the command                  \n"
-        << "  users                    * List all the users of the FileSystem.If the current user is 'root', all users' passwords will be shown as well. \n"
-        << "  reset password <username>* ROOT ONLY! Reset the pw of any user.Error will occur if the user is not 'root'\n";
+        << "  users                    * List all the users of the FileSystem.Passwords will be shown if 'root' use this command\n"
+        << "  reset password <name>    * ROOT ONLY! Reset the pw of any user.Error will occur if the user is not 'root'\n";
 }
 
 

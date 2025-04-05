@@ -3,6 +3,34 @@
 #define GREEN   "\033[32m"   // ÂÌÉ«Ç°¾°
 #include "VFS.h"
 using namespace std;
+
+//show new features
+void showNewCommands() {
+    cout << "In this project, I added some commands as follows:\n"
+        << "-----------------------------new commands:-------------------------------\n"
+        << "  ctrl c <name>            * To copy a file or directory\n"
+        << "  ctrl v                   * To paste the copied file or directory in the current directory\n"
+        << "  cd ..                    * To get to the parent dir\n"
+        << "  tree                     * To get the tree structure of this file\n"
+        << "  write  <filename>        * Enter the writing mode which is more flexible and convient!\n"
+        << "  echo   <content>         * Repeat what the user input in the command                  \n"
+        << "  users                    * List all the users of the FileSystem.Passwords will be shown if 'root' use this command\n"
+        << "  reset password <name>    * ROOT ONLY! Reset the pw of any user.Error will occur if the user is not 'root'\n";
+}
+void loginAnimation() {
+    cout << "Wait a second to login......\n";
+    for (int i = 0; i < 20; i++) {
+        cout << "[";
+        for (int j = 0; j < i; j++) {
+            cout << "=";
+        }
+        for (int j = 0; j < 20 - i; j++) {
+            cout << " ";
+        }
+        cout << "]\r";
+        _sleep(65);
+    }
+}
 VFS::VFS() {
     filesystem = new FileSystem("root", InodeFactory::generateInode());
 }
@@ -38,8 +66,7 @@ void VFS::handleLogin(string& username) {
                 getline(cin, newPass);
             }
             cout << GREEN << "Success! your new password is " << newPass << endl << RESET;
-            cout << "Now login......\n";
-            _sleep(1000);
+            loginAnimation();
         }
     else {
         cout << "Please input your password: \n";
@@ -47,8 +74,7 @@ void VFS::handleLogin(string& username) {
         getline(cin, password);
         if (password == filesystem->getUserPassword(username)) {
             cout << GREEN << "Correct!\n" << RESET;
-            cout << "Now login......\n";
-            _sleep(500);
+            loginAnimation();
         }
         else {
             throw std::runtime_error("Wrong Password. Please Try again or login in as root account to reset your password!.");
@@ -70,9 +96,7 @@ void VFS::handleRegister(string& username) {
         throw std::runtime_error("Failed to register user.");
     }
     std::cout <<GREEN<< "User registered successfully!\n"<<RESET;
-    _sleep(500);
-    cout << "Now login......\n";
-    _sleep(1000);
+    loginAnimation();
 }
 
 void VFS::processUserCommands(const string& username) {
@@ -89,8 +113,9 @@ void VFS::processUserCommands(const string& username) {
 
         try {
             if (command == "") {
-                throw runtime_error("Empty command! Use  help to check valid commands!");
+                continue;
             }
+
             client.processCommand(command);
         } catch(const std::exception& e) {
             std::cout << RED<<"Error: " << e.what() <<RESET<< std::endl;
@@ -113,7 +138,7 @@ void VFS::run() {
         std::cout << "============================\n";
         std::cout << "  File System Simulator\n";
         std::cout << "============================\n";
-        std::cout << "1. Login\n2. Register\n3. Exit\nPlease choose (1-3): ";
+        std::cout << "1. Login\n2. Register\n3. Exit\n4. Show new commands\nPlease choose (1-3): ";
         std::string choice;
         std::getline(std::cin, choice);
 
@@ -135,6 +160,12 @@ void VFS::run() {
             }
             else if(choice == "2" || choice == "register" || choice == "r" || choice == "R") {
                 handleRegister(username);
+            }
+            else if (choice == "4" || choice == "check") {
+                showNewCommands();
+                std::cout << "Press Enter to continue...";
+                std::cin.get();
+                continue;
             }
             else {
                 std::cout << RED<<"Invalid choice. Please try again.\n"<<RESET;
